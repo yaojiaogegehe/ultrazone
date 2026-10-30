@@ -1,125 +1,52 @@
-# Development Rules
+# 开发规范
 
-## Conversational Style
+## 交流风格
 
-- Keep answers short and concise
-- No emojis in commits, issues, PR comments, or code
-- No fluff or cheerful filler text (e.g., "Thanks @user" not "Thanks so much @user!")
-- Technical prose only, be direct
-- Use concise, clear, simple language. Define unavoidable jargon before using it.
-- Explain non-trivial designs and problems as: problem, concrete example or short trace, then solution. State why the solution is necessary and distinguish it from optional complexity.
-- Prefer concrete behavior and small illustrations over abstract summaries, dense terminology, or unexplained lists of changes.
-- When the user asks a question, answer it first before making edits or running implementation commands.
-- When responding to user feedback or an analysis, explicitly say whether you agree or disagree before saying what you changed.
+- 回答应简明扼要。
+- 在提交（commit）、问题（issue）、PR 评论或代码中，不要使用表情符号（emoji）。
+- 避免冗余词汇或过于热情的客套话（例如，使用“Thanks @user”，而不是“Thanks so much @user!”）。
+- 仅使用技术性语言，表达要直接。
+- 使用简洁、清晰、简单的语言。若必须使用专业术语，请先进行定义。
+- 在阐述复杂的设计或问题时，请遵循以下结构：问题描述 -> 具体示例或简要执行流程 -> 解决方案。说明为何该方案是必要的，并将其与非必要的复杂性区分开来。
+- 优先提供具体行为描述和简短示例，避免使用抽象总结、晦涩术语或未经解释的变更列表。
+- 当用户提出问题时，应先回答问题，再进行修改或执行实现命令。
+- 在回应用户反馈或分析时，应先明确表达同意或不同意，然后再说明所做的修改。
 
-## Code Quality
+## 代码质量
 
-- Read files in full before wide-ranging changes, before editing files you have not fully inspected, and when asked to investigate or audit. Do not rely on search snippets for broad changes.
-- No `any` unless absolutely necessary.
-- Inline single-line helpers that have only one call site.
-- Check node_modules for external API types; don't guess.
-- **No inline imports** (`await import()`, `import("pkg").Type`, dynamic type imports). Top-level imports only.
-- In `packages/coding-agent`, resolve package assets through helpers in `src/config.ts`. Do not use `__dirname` directly; the helpers account for source checkouts, npm installations, and standalone binaries.
-- Never remove or downgrade code to fix type errors from outdated deps; upgrade the dep instead.
-- Use only erasable TypeScript syntax (Node strip-only mode) in code checked by the root config (`packages/*/src`, `packages/*/test`, `packages/coding-agent/examples`): no parameter properties, `enum`, `namespace`/`module`, `import =`, `export =`, or other constructs needing JS emit. Use explicit fields with constructor assignments.
-- Always ask before removing functionality or code that appears intentional.
-- Do not preserve backward compatibility unless the user asks for it.
-- Never hardcode key checks (e.g. `matchesKey(keyData, "ctrl+x")`). Add defaults to `DEFAULT_EDITOR_KEYBINDINGS` or `DEFAULT_APP_KEYBINDINGS` so they stay configurable.
-- Never modify `packages/ai/src/models.generated.ts` directly; update `packages/ai/scripts/generate-models.ts` instead, then regenerate. Including the resulting `models.generated.ts` diff is always OK, even if regeneration includes unrelated upstream model metadata changes. The generated model data in `packages/ai/src/providers/data/` is gitignored: never stage it, and don't look for it in git history.
+- 在进行大规模修改、编辑未完全审阅的文件，或受邀进行调查/审计时，请务必完整阅读相关文件。进行大范围变更时，切勿仅依赖搜索片段。
+- 除非绝对必要，否则严禁使用 `any` 类型。
+- 对于仅在单处调用的单行辅助函数，应将其内联（inline）处理。
+- 查阅 `node_modules` 以确认外部 API 类型；切勿凭空猜测。
+- **禁止使用内联导入**（如 `await import()`、`import("pkg").Type` 或动态类型导入等）。仅允许使用顶层导入（top-level imports）。
+- 在 `packages/coding-agent` 中，通过 `src/config.ts` 提供的辅助函数来解析包资源（assets）。请勿直接使用 `__dirname`；这些辅助函数已妥善处理了源码检出（source checkouts）、npm 安装以及独立二进制文件等不同场景。
+- 严禁为了修复因依赖项过时而导致的类型错误，而删除或降级代码；应通过升级相关依赖项来解决问题。
+- 在由根配置（root config）管控的代码区域（即 `packages/*/src`、`packages/*/test` 及 `packages/coding-agent/examples`）中，仅允许使用“可擦除”的 TypeScript 语法（即 Node.js 的“仅移除类型”模式）。这意味着不得使用参数属性（parameter properties）、`enum`、`namespace`/`module`、`import =`、`export =` 或其他需要额外生成 JS 代码的语法结构。请使用显式字段并在构造函数中进行赋值。 - 在移除看似有意为之的功能或代码前，务必先进行确认。
+- 除非用户明确要求，否则无需保留向后兼容性。
+- 切勿硬编码按键检查（例如 `matchesKey(keyData, "ctrl+x")`）。应将默认值添加到 `DEFAULT_EDITOR_KEYBINDINGS` 或 `DEFAULT_APP_KEYBINDINGS` 中，以确保其可配置。
+- 切勿直接修改 `packages/ai/src/models.generated.ts`；应修改 `packages/ai/scripts/generate-models.ts`，然后重新生成该文件。提交时包含生成的 `models.generated.ts` 的差异（diff）是可以接受的，即使重新生成过程中包含了与当前任务无关的上游模型元数据变更。`packages/ai/src/providers/data/` 目录下的生成模型数据已被加入 `.gitignore`：请勿将其添加到暂存区（stage），也不要在 Git 历史记录中查找这些文件。
 
-## Commands
+## 命令
 
-- After code changes (not docs): `npm run check` (full output, no tail). Fix all errors, warnings, and infos before committing. Does not run tests.
-- Never run `npm run build` or `npm test` unless requested by the user.
-- Never run the full vitest suite directly: it includes e2e tests that activate when endpoint/auth env vars are present. For all non-e2e tests, run `./test.sh` from the repo root. Otherwise run specific tests from the package root:
-  - Vitest: `node "$(git rev-parse --show-toplevel)/node_modules/vitest/dist/cli.js" --run test/specific.test.ts`
-  - `packages/tui` (`node:test`): `node --test test/specific.test.ts`
-- If you create or modify a test file, run it and iterate on test or implementation until it passes.
-- For `packages/coding-agent/test/suite/`, use `test/suite/harness.ts` + the faux provider. No real provider APIs, keys, or paid tokens.
-- When regressions tests for fixing a github issue, add a comment with the github issue number next to the test.
-- For ad-hoc scripts, `write` them to a temp file (e.g. `/tmp`), run, edit if needed, remove when done. Don't embed multi-line scripts in `bash` commands.
-- Never commit unless the user asks.
+- 修改代码（非文档）后，请运行 `npm run check`（查看完整输出，无需截断）。在提交代码前，必须修复所有错误（errors）、警告（warnings）和提示（infos）。此命令不包含测试环节。
+- 除非用户明确要求，否则请勿运行 `npm run build` 或 `npm test`。
+- 切勿直接运行完整的 Vitest 测试套件：其中包含端到端（E2E）测试，若环境中存在端点（endpoint）或身份验证（auth）相关的环境变量，这些测试便会自动触发。对于非 E2E 测试，请在仓库根目录下运行 `./test.sh`。若需运行特定测试，请在对应的包（package）根目录下执行：
+- Vitest: `node "$(git rev-parse --show-toplevel)/node_modules/vitest/dist/cli.js" --run test/specific.test.ts`
+- `packages/tui` (`node:test`): `node --test test/specific.test.ts`
+- 若创建或修改了测试文件，请务必运行该测试，并不断调整测试代码或实现逻辑，直至测试通过。
+- 在 `packages/coding-agent/test/suite/` 目录下，请使用 `test/suite/harness.ts` 配合模拟提供商（faux provider）进行测试。严禁使用真实的提供商 API、密钥或付费令牌。 - 在编写用于修复 GitHub Issue 的回归测试时，请在测试代码旁添加注释，注明对应的 GitHub Issue 编号。
+- 对于临时脚本，请将其写入临时文件（例如 `/tmp`），执行后根据需要进行修改，并在任务完成后将其删除。请勿将多行脚本直接嵌入到 `bash` 命令中。
+- 除非用户明确要求，否则切勿执行提交（commit）操作。
 
-## Dependency and Install Security
+## 依赖项与安装安全性
 
-- Treat npm dep and lockfile changes as reviewed code. Direct registry deps, including internal workspace deps, stay pinned to exact versions.
-- When updating `undici`, you MUST read its changelog/release notes for the target version and evaluate whether any changes may affect functionality before applying the update.
-- Hydrate/update locally with `npm install --ignore-scripts`; clean/CI-style with `npm ci --ignore-scripts`. Don't run lifecycle scripts unless the user asks.
-- If dep metadata changes, refresh `package-lock.json` with `npm install --package-lock-only --ignore-scripts`.
-- If `packages/coding-agent/install-lock/` needs regen, run `node scripts/generate-coding-agent-install-lock.mjs` (verify with `--check` or `npm run check`). New deps with lifecycle scripts require review and an explicit allowlist entry in that script; never add one silently.
-- Pre-commit blocks lockfile commits unless `PI_ALLOW_LOCKFILE_CHANGE=1`. Don't bypass unless the user wants the lockfile change committed.
+- 将 `npm` 依赖项及锁文件（lockfile）的变更视为已审查的代码。所有直接引用的依赖项（包括工作区内部的依赖项）必须锁定在特定版本。
+- 在更新 `undici` 时，必须查阅目标版本的更新日志（changelog/release notes），评估其中变更是否会影响现有功能，确认无误后再执行更新。
+- 本地安装或更新依赖时，请使用 `npm install --ignore-scripts`；在执行清理安装或 CI 环境安装时，请使用 `npm ci --ignore-scripts`。除非用户明确要求，否则不要运行任何生命周期脚本（lifecycle scripts）。
+- 若依赖项元数据发生变更，请通过 `npm install --package-lock-only --ignore-scripts` 更新 `package-lock.json`。
+- 若需重新生成 `packages/coding-agent/install-lock/`，请运行 `node scripts/generate-coding-agent-install-lock.mjs`（可通过 `--check` 参数或 `npm run check` 命令进行验证）。若新增的依赖项包含生命周期脚本，则必须经过审查，并在该脚本中将其显式加入允许列表（allowlist）；严禁在未明确说明的情况下擅自添加。
+- 提交前检查（Pre-commit）会拦截锁文件的提交，除非设置了 `PI_ALLOW_LOCKFILE_CHANGE=1`。除非用户确实希望提交锁文件的变更，否则请勿绕过此限制。
 
 ## Git
 
-Multiple pi sessions may be running in this cwd at the same time, each modifying different files. Git operations that touch unstaged, staged, or untracked files outside your own changes will stomp on other sessions' work. Follow these rules:
-
-Committing:
-
-- Only commit files YOU changed in THIS session.
-- Stage explicit paths (`git add <path1> <path2>`); never `git add -A` / `git add .`.
-- Before committing, run `git status` and verify you are only staging your files.
-- `packages/ai/src/models.generated.ts` may always be included alongside your files.
-- Message format: `{feat,fix,docs}[(ai,tui,agent,coding-agent)]: <commit message> (optionally multiple lines)`. Message is informative and concise.
-
-Never run (destroys other agents' work or bypasses checks):
-
-- `git reset --hard`, `git checkout .`, `git clean -fd`, `git stash`, `git add -A`, `git add .`, `git commit --no-verify`.
-
-If rebase conflicts occur:
-
-- Resolve conflicts only in files you modified.
-- If a conflict is in a file you did not modify, abort and ask the user.
-- Never force push.
-
-## Issues and PRs
-
-See `CONTRIBUTING.md` for the contributor gate (auto-close workflows, `lgtm`/`lgtmi`, quality bar).
-
-When reviewing PRs:
-
-- Do not run `gh pr checkout`, `git switch`, or otherwise move the worktree to the PR branch unless the user explicitly asks.
-- Use `gh pr view`, `gh pr diff`, `gh api`, and local `git show`/`git diff` against fetched refs to inspect PR metadata, commits, and patches without changing branches.
-- If you need PR file contents, fetch/read them into temporary files or use `git show <ref>:<path>` without switching branches.
-
-When creating issues:
-
-- Add `pkg:*` labels for affected packages (`pkg:agent`, `pkg:ai`, `pkg:coding-agent`, `pkg:tui`); use all that apply.
-
-When posting issue/PR comments:
-
-- Write the comment to a temp file and post with `gh issue/pr comment --body-file` (never multi-line markdown via `--body`).
-- Keep comments concise, technical, in the user's tone.
-- End every AI-posted comment with the AI-generated disclaimer line specified by the originating prompt (e.g. `This comment is AI-generated by `/wr``).
-
-When closing issues via commit:
-
-- Include `fixes #<number>` or `closes #<number>` in the message so merging auto-closes the issue. For multiple issues, repeat the keyword per issue (`closes #1, closes #2`); a shared keyword (`closes #1, #2`) only closes the first.
-
-## Testing pi Interactive Mode with tmux
-
-For testing pi's interactive mode, load and follow [.pi/skills/interactive-testing.md](.pi/skills/interactive-testing.md).
-
-## Changelog
-
-Location: `packages/*/CHANGELOG.md` (one per package).
-
-Sections under `## [Unreleased]`: `### Breaking Changes` (API changes requiring migration), `### Added`, `### Changed`, `### Fixed`, `### Removed`.
-
-Rules:
-
-- All new entries go under `## [Unreleased]`. Read the full section first and append to existing subsections; never duplicate them.
-- Released version sections (e.g. `## [0.12.2]`) are immutable; never modify them.
-- Do not create changelog entries when the work targets a branch other than `main`
-
-Attribution:
-
-- Internal (from issues): `Fixed foo bar ([#123](https://github.com/earendil-works/pi/issues/123))`
-- External contributions: `Added feature X ([#456](https://github.com/earendil-works/pi/pull/456) by [@username](https://github.com/username))`
-
-## Releasing
-
-For release preparation, publishing, verification, or recovery, load and follow [.pi/skills/release.md](.pi/skills/release.md).
-
-## User Override
-
-If the user's instructions conflict with any rule in this document, ask for explicit confirmation before overriding. Only then execute their instructions.
+可能同时运行多个 `pi` 会话。
